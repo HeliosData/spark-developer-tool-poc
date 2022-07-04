@@ -17,9 +17,10 @@
 
 package org.apache.spark.sql.execution.datasources
 
+import com.helios.spark.CSVLineRecordReader
+
 import java.io.Closeable
 import java.net.URI
-
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.Text
@@ -46,6 +47,26 @@ class HadoopFileLinesReader(
 
   def this(file: PartitionedFile, conf: Configuration) = this(file, None, conf)
 
+//  private val iterator = {
+//    val fileSplit = new FileSplit(
+//      new Path(new URI(file.filePath)),
+//      file.start,
+//      file.length,
+//      // TODO: Implement Locality
+//      Array.empty)
+//    val attemptId = new TaskAttemptID(new TaskID(new JobID(), TaskType.MAP, 0), 0)
+//    val hadoopAttemptContext = new TaskAttemptContextImpl(conf, attemptId)
+//
+//    val reader = lineSeparator match {
+//      case Some(sep) => new LineRecordReader(sep)
+//      // If the line separator is `None`, it covers `\r`, `\r\n` and `\n`.
+//      case _ => new LineRecordReader()
+//    }
+//
+//    reader.initialize(fileSplit, hadoopAttemptContext)
+//    new RecordReaderIterator(reader)
+//  }
+
   private val iterator = {
     val fileSplit = new FileSplit(
       new Path(new URI(file.filePath)),
@@ -57,9 +78,9 @@ class HadoopFileLinesReader(
     val hadoopAttemptContext = new TaskAttemptContextImpl(conf, attemptId)
 
     val reader = lineSeparator match {
-      case Some(sep) => new LineRecordReader(sep)
+      case Some(sep) => new CSVLineRecordReader(sep)
       // If the line separator is `None`, it covers `\r`, `\r\n` and `\n`.
-      case _ => new LineRecordReader()
+      case _ => new CSVLineRecordReader()
     }
 
     reader.initialize(fileSplit, hadoopAttemptContext)
