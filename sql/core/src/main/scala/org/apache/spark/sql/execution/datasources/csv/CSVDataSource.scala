@@ -27,8 +27,8 @@ import org.apache.hadoop.io.{LongWritable, Text}
 import org.apache.hadoop.mapred.TextInputFormat
 import org.apache.hadoop.mapreduce.Job
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
-
 import org.apache.spark.TaskContext
+
 import org.apache.spark.input.{PortableDataStream, StreamInputFormat}
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.{BinaryFileRDD, RDD}
@@ -196,32 +196,10 @@ object TextInputCSVDataSource extends CSVDataSource {
       caseSensitive: Boolean,
       columnPruning: Boolean): Iterator[InternalRow] = {
     val lines = {
-      val linesReader = new HadoopFileLinesReader(file, conf)
+      val linesReader = new SDSHadoopFileLinesReader(file, conf)
       Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => linesReader.close()))
       linesReader.map { line =>
         new String(line.getBytes, 0, line.getLength, parser.options.charset)
-      }
-    }
-
-    val hasHeader = parser.options.headerFlag && file.start == 0
-    if (hasHeader) {
-      // Checking that column names in the header are matched to field names of the schema.
-      // The header will be removed from lines.
-      // Note: if there are only comments in the first block, the header would probably
-      // be not extracted.
-      CSVUtils.extractHeader(lines, parser.options).foreach { header =>
-        val actualRequiredSchema =
-          StructType(requiredSchema.filterNot(_.name == parser.options.columnNameOfCorruptRecord))
-        val actualDataSchema =
-          StructType(dataSchema.filterNot(_.name == parser.options.columnNameOfCorruptRecord))
-        val schema = if (columnPruning) actualRequiredSchema else actualDataSchema
-        val columnNames = parser.tokenizer.parseLine(header)
-        CSVDataSource.checkHeaderColumnNames(
-          schema,
-          columnNames,
-          file.filePath,
-          parser.options.enforceSchema,
-          caseSensitive)
       }
     }
 

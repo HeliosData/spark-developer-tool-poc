@@ -20,6 +20,7 @@ package org.apache.spark.sql.execution.datasources
 import java.io.Closeable
 import java.net.URI
 
+import com.helios.spark.CSVLineRecordReader
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.Text
@@ -38,7 +39,7 @@ import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl
  * @note The behavior when `lineSeparator` is `None` (covering `\r`, `\r\n` and `\n`) is defined
  *       by [[LineRecordReader]], not within Spark.
  */
-class HadoopFileLinesReader(
+class SDSHadoopFileLinesReader(
   file: PartitionedFile,
   lineSeparator: Option[Array[Byte]],
   conf: Configuration) extends Iterator[Text] with Closeable {
@@ -56,9 +57,9 @@ class HadoopFileLinesReader(
     val hadoopAttemptContext = new TaskAttemptContextImpl(conf, attemptId)
 
     val reader = lineSeparator match {
-      case Some(sep) => new LineRecordReader(sep)
+      case Some(sep) => new CSVLineRecordReader(sep)
       // If the line separator is `None`, it covers `\r`, `\r\n` and `\n`.
-      case _ => new LineRecordReader()
+      case _ => new CSVLineRecordReader()
     }
 
     reader.initialize(fileSplit, hadoopAttemptContext)
