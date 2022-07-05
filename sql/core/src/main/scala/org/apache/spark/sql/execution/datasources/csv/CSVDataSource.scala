@@ -197,6 +197,9 @@ object TextInputCSVDataSource extends CSVDataSource {
       columnPruning: Boolean): Iterator[InternalRow] = {
     val csvHeaderStr = dataSchema.fieldNames.mkString(",")
     conf.set("csvHeaderStr", csvHeaderStr)
+    System.out.println("=============")
+    System.out.printf("readFile: %s \n", csvHeaderStr)
+    System.out.println("=============")
 
     val lines = {
       val linesReader = new HadoopFileLinesReader(file, conf)

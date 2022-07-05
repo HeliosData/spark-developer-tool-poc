@@ -1,6 +1,5 @@
 package com.helios.spark;
 
-import jdk.internal.joptsimple.internal.Strings;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -97,7 +96,12 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
     this.pos = this.start;
 
     String csvHeaderStr = context.getConfiguration().get("csvHeaderStr");
-    this.columnNames = csvHeaderStr.split(",");
+    if (csvHeaderStr != null) {
+      System.out.printf("initialize if: %s \n", csvHeaderStr);
+      this.columnNames = csvHeaderStr.split(",");
+    } else {
+      System.out.println("initialize else");
+    }
   }
 
   private int maxBytesToConsume(long pos) {
@@ -139,6 +143,7 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
   }
 
   public boolean nextKeyValue() throws IOException {
+    System.out.printf("start nextKeyValue: %d \n", this.pos);
     if (this.key == null) {
       this.key = new LongWritable();
     }
@@ -166,6 +171,7 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
       LOG.info("Skipped line of size " + newSize + " at pos " + (this.pos - (long) newSize));
     }
 
+    System.out.printf("done nextKeyValue: %d \n", this.pos);
     if (newSize == 0) {
       this.key = null;
       this.value = null;
@@ -179,10 +185,11 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
   private XXX xxx = getColumnIndicesToAnonymizeAndRemove();
 
   private Text modifyText(Text text) {
-    String delimiter = ",";
+    if (text.getLength() == 0 ) {
+      return text;
+    }
 
-    LOG.info("====> modifyText");
-    LOG.info(Arrays.toString(this.columnNames));
+    String delimiter = ",";
 
     System.out.println("modifyText");
     System.out.printf("modifyText: before: %s \n", text);

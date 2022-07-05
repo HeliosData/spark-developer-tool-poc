@@ -107,9 +107,11 @@ class CSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils with Te
     val cars = spark
       .read
       .format("csv")
-      .option("header", "false")
+      .option("header", "true")
       .load(testFile(carsFile))
-    verifyCars(cars, withHeader = false, checkTypes = false)
+
+    cars.show()
+    verifyCars(cars, withHeader = true, checkTypes = false)
   }
 
   test("simple csv test") {

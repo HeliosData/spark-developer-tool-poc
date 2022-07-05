@@ -18,7 +18,6 @@
 package org.apache.spark.sql.execution.datasources
 
 import com.helios.spark.CSVLineRecordReader
-
 import java.io.Closeable
 import java.net.URI
 import org.apache.hadoop.conf.Configuration
@@ -81,6 +80,13 @@ class HadoopFileLinesReader(
       case Some(sep) => new CSVLineRecordReader(sep)
       // If the line separator is `None`, it covers `\r`, `\r\n` and `\n`.
       case _ => new CSVLineRecordReader()
+    }
+
+    val csvHeaderStr = conf.get("csvHeaderStr");
+    if (csvHeaderStr != null) {
+      System.out.printf("iterator if: %s \n", csvHeaderStr);
+    } else {
+      System.out.println("iterator else");
     }
 
     reader.initialize(fileSplit, hadoopAttemptContext)
