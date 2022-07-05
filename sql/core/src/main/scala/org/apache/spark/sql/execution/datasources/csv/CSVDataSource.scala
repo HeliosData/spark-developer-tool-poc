@@ -195,11 +195,6 @@ object TextInputCSVDataSource extends CSVDataSource {
       dataSchema: StructType,
       caseSensitive: Boolean,
       columnPruning: Boolean): Iterator[InternalRow] = {
-    val csvHeaderStr = dataSchema.fieldNames.mkString(",")
-    conf.set("csvHeaderStr", csvHeaderStr)
-    System.out.println("=============")
-    System.out.printf("readFile: %s \n", csvHeaderStr)
-    System.out.println("=============")
 
     val lines = {
       val linesReader = new HadoopFileLinesReader(file, conf)
@@ -211,6 +206,8 @@ object TextInputCSVDataSource extends CSVDataSource {
 
     val hasHeader = parser.options.headerFlag && file.start == 0
     if (hasHeader) {
+      val csvHeaderStr = dataSchema.fieldNames.mkString(",")
+      conf.set("csvHeaderStr", csvHeaderStr)
       // Checking that column names in the header are matched to field names of the schema.
       // The header will be removed from lines.
       // Note: if there are only comments in the first block, the header would probably

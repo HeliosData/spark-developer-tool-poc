@@ -82,13 +82,6 @@ class HadoopFileLinesReader(
       case _ => new CSVLineRecordReader()
     }
 
-    val csvHeaderStr = conf.get("csvHeaderStr");
-    if (csvHeaderStr != null) {
-      System.out.printf("iterator if: %s \n", csvHeaderStr);
-    } else {
-      System.out.println("iterator else");
-    }
-
     reader.initialize(fileSplit, hadoopAttemptContext)
     new RecordReaderIterator(reader)
   }

@@ -1,5 +1,6 @@
 package com.helios.spark;
 
+import com.helios.spark.sds.client.DatatableSchema;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -39,6 +40,8 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
   private byte[] recordDelimiterBytes;
 
   private String[] columnNames;
+  private List<DatatableSchema> sdsDatatableSchemas;
+  private CSVColumnIndicesInfo columnIndicesInfo;
 
   public CSVLineRecordReader() {}
 
@@ -96,11 +99,10 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
     this.pos = this.start;
 
     String csvHeaderStr = context.getConfiguration().get("csvHeaderStr");
+    String sdsDatatableSchemaList = context.getConfiguration().get("sdsDatatableSchemaList");
     if (csvHeaderStr != null) {
-      System.out.printf("initialize if: %s \n", csvHeaderStr);
       this.columnNames = csvHeaderStr.split(",");
-    } else {
-      System.out.println("initialize else");
+      this.columnIndicesInfo = CSVColumnIndicesInfo.buildFromSDSDatatableSchemaList(sdsDatatableSchemaList);
     }
   }
 
@@ -182,7 +184,6 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
     }
   }
 
-  private XXX xxx = getColumnIndicesToAnonymizeAndRemove();
 
   private Text modifyText(Text text) {
     if (text.getLength() == 0 ) {
@@ -212,25 +213,6 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
     Text modifiedText = new Text(newStr);
     System.out.printf("modifyText: after: %s \n", modifiedText);
     return modifiedText;
-  }
-
-  class XXX {
-    private Set<Integer> indicesToAnonymize;
-    private Set<Integer> indicesToRemove;
-
-    public XXX(Set<Integer> indicesToAnonymize, Set<Integer> indicesToRemove) {
-      this.indicesToAnonymize = indicesToAnonymize;
-      this.indicesToRemove = indicesToRemove;
-    }
-  }
-
-  private XXX getColumnIndicesToAnonymizeAndRemove() {
-    // TODO: fix
-    Set<Integer> a = new HashSet<>();
-    a.add(0);
-    Set<Integer> b = new HashSet<>();
-    b.add(1);
-    return new XXX(a, b);
   }
 
   public LongWritable getCurrentKey() {
