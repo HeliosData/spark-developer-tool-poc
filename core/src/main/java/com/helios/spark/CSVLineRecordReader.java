@@ -16,10 +16,15 @@ import org.apache.hadoop.io.compress.*;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import org.apache.hadoop.mapreduce.lib.input.*;
+import org.apache.hadoop.mapreduce.lib.input.CompressedSplitLineReader;
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.lib.input.SplitLineReader;
+import org.apache.hadoop.mapreduce.lib.input.UncompressedSplitLineReader;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @InterfaceAudience.LimitedPrivate({"MapReduce", "Pig"})
 @InterfaceStability.Evolving
@@ -53,7 +58,7 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
     FileSplit split = (FileSplit) genericSplit;
     Configuration job = context.getConfiguration();
     this.maxLineLength =
-            job.getInt("mapreduce.input.linerecordreader.line.maxlength", Integer.MAX_VALUE);
+        job.getInt("mapreduce.input.linerecordreader.line.maxlength", Integer.MAX_VALUE);
     this.start = split.getStart();
     this.end = this.start + split.getLength();
     Path file = split.getPath();
@@ -65,30 +70,30 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
       this.decompressor = CodecPool.getDecompressor(codec);
       if (codec instanceof SplittableCompressionCodec) {
         SplitCompressionInputStream cIn =
-                ((SplittableCompressionCodec) codec)
-                        .createInputStream(
-                                this.fileIn,
-                                this.decompressor,
-                                this.start,
-                                this.end,
-                                SplittableCompressionCodec.READ_MODE.BYBLOCK);
+            ((SplittableCompressionCodec) codec)
+                .createInputStream(
+                    this.fileIn,
+                    this.decompressor,
+                    this.start,
+                    this.end,
+                    SplittableCompressionCodec.READ_MODE.BYBLOCK);
         this.in = new CompressedSplitLineReader(cIn, job, this.recordDelimiterBytes);
         this.start = cIn.getAdjustedStart();
         this.end = cIn.getAdjustedEnd();
         this.filePosition = cIn;
       } else {
         this.in =
-                new SplitLineReader(
-                        codec.createInputStream(this.fileIn, this.decompressor),
-                        job,
-                        this.recordDelimiterBytes);
+            new SplitLineReader(
+                codec.createInputStream(this.fileIn, this.decompressor),
+                job,
+                this.recordDelimiterBytes);
         this.filePosition = this.fileIn;
       }
     } else {
       this.fileIn.seek(this.start);
       this.in =
-              new UncompressedSplitLineReader(
-                      this.fileIn, job, this.recordDelimiterBytes, split.getLength());
+          new UncompressedSplitLineReader(
+              this.fileIn, job, this.recordDelimiterBytes, split.getLength());
       this.filePosition = this.fileIn;
     }
 
@@ -102,14 +107,16 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
     String sdsDatatableSchemaList = context.getConfiguration().get("sdsDatatableSchemaList");
     if (csvHeaderStr != null) {
       this.columnNames = csvHeaderStr.split(",");
-      this.columnIndicesInfo = CSVColumnIndicesInfo.buildFromSDSDatatableSchemaList(sdsDatatableSchemaList);
+      // TODO: tbd
+      this.columnIndicesInfo =
+          CSVColumnIndicesInfo.buildFromSDSDatatableSchemaList(new ArrayList<>());
     }
   }
 
   private int maxBytesToConsume(long pos) {
     return this.isCompressedInput
-            ? Integer.MAX_VALUE
-            : (int) Math.max(Math.min(2147483647L, this.end - pos), (long) this.maxLineLength);
+        ? Integer.MAX_VALUE
+        : (int) Math.max(Math.min(2147483647L, this.end - pos), (long) this.maxLineLength);
   }
 
   private long getFilePosition() throws IOException {
@@ -162,7 +169,7 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
         newSize = this.skipUtfByteOrderMark();
       } else {
         newSize =
-                this.in.readLine(this.value, this.maxLineLength, this.maxBytesToConsume(this.pos));
+            this.in.readLine(this.value, this.maxLineLength, this.maxBytesToConsume(this.pos));
         this.pos += (long) newSize;
       }
 
@@ -184,9 +191,8 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
     }
   }
 
-
   private Text modifyText(Text text) {
-    if (text.getLength() == 0 ) {
+    if (text.getLength() == 0) {
       return text;
     }
 
@@ -199,12 +205,12 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
     String[] tokens = str.split(delimiter);
     List<String> newTokens = new ArrayList<>(tokens.length);
     for (int i = 0; i < tokens.length; i++) {
-      if (xxx.indicesToRemove.contains(i)) {
+      if (this.columnIndicesInfo.getIndicesToRemove().contains(i)) {
         continue;
       }
 
       String token = tokens[i];
-      if (xxx.indicesToAnonymize.contains(i)) {
+      if (this.columnIndicesInfo.getIndicesToAnonymize().contains(i)) {
         token = String.format("%s_anony", token);
       }
       newTokens.add(token);
@@ -225,8 +231,8 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
 
   public float getProgress() throws IOException {
     return this.start == this.end
-            ? 0.0F
-            : Math.min(
+        ? 0.0F
+        : Math.min(
             1.0F, (float) (this.getFilePosition() - this.start) / (float) (this.end - this.start));
   }
 
