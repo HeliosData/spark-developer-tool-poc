@@ -17,6 +17,8 @@
 
 package org.apache.spark.sql.execution.datasources.csv
 
+import scala.collection.JavaConverters
+
 import com.helios.spark.Util
 import com.helios.spark.sds.client.{DatatableSchema, SDSClient, SDSClientImpl}
 import org.apache.hadoop.conf.Configuration
@@ -38,14 +40,8 @@ class SDSCSVFileFormat extends CSVFileFormat {
   }
 
   def getSDSDatatableSchema(license: String, tablePath: String): Seq[DatatableSchema] = {
-    // TODO: get from sds client
-    printf("getSDSDatatableSchema: %s, %s", license, tablePath)
-    Vector(
-      new DatatableSchema("year", "string", true),
-      new DatatableSchema("model", "string", false),
-      new DatatableSchema("comment", "string", false),
-      new DatatableSchema("blank", "string", false)
-    )
+    val datatableSchemas = this.sdsClient.getDatatableSchema(license, tablePath)
+    JavaConverters.asScalaIteratorConverter(datatableSchemas.iterator()).asScala.toSeq
   }
 
   override def inferSchema(
@@ -59,12 +55,14 @@ class SDSCSVFileFormat extends CSVFileFormat {
 
     val sdsDeveloperLicense = options.get(Util.OPTION_KEY_SDS_DEVELOPER_LICENSE)
     val sdsDatatablePath = options.get(Util.OPTION_KEY_SDS_DATATABLE_PATH)
-    if (sdsDeveloperLicense.isEmpty || sdsDatatablePath.isEmpty ) {
-      throw new RuntimeException("must provide \"%s\" and \"%s\" in option"
-        .format(Util.OPTION_KEY_SDS_DEVELOPER_LICENSE, Util.OPTION_KEY_SDS_DATATABLE_PATH))
-    }
+
+    // TODO: Move SparkSession validation to session creation
+//    if (sdsDeveloperLicense.isEmpty || sdsDatatablePath.isEmpty ) {
+//      throw new RuntimeException("must provide \"%s\" and \"%s\" in option"
+//        .format(Util.OPTION_KEY_SDS_DEVELOPER_LICENSE, Util.OPTION_KEY_SDS_DATATABLE_PATH))
+//    }
     getNewSchema(CSVDataSource(parsedOptions).inferSchema(sparkSession, files, parsedOptions),
-      sdsDeveloperLicense.get, sdsDatatablePath.get)
+      sdsDeveloperLicense.getOrElse(""), sdsDatatablePath.getOrElse(""))
   }
 
   def getNewSchema(
