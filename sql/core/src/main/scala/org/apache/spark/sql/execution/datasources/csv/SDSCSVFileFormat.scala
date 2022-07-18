@@ -61,8 +61,9 @@ class SDSCSVFileFormat extends CSVFileFormat {
 //      throw new RuntimeException("must provide \"%s\" and \"%s\" in option"
 //        .format(Util.OPTION_KEY_SDS_DEVELOPER_LICENSE, Util.OPTION_KEY_SDS_DATATABLE_PATH))
 //    }
-    getNewSchema(CSVDataSource(parsedOptions).inferSchema(sparkSession, files, parsedOptions),
-      sdsDeveloperLicense.getOrElse(""), sdsDatatablePath.getOrElse(""))
+//    getNewSchema(CSVDataSource(parsedOptions).inferSchema(sparkSession, files, parsedOptions),
+//      sdsDeveloperLicense.getOrElse(""), sdsDatatablePath.getOrElse(""))
+    CSVDataSource(parsedOptions).inferSchema(sparkSession, files, parsedOptions)
   }
 
   def getNewSchema(

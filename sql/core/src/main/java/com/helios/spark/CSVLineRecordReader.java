@@ -217,7 +217,7 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
     if (!result) {
       return false;
     }
-    this.value = modifyText(this.value);
+    //    this.value = modifyText(this.value);
     return true;
   }
 

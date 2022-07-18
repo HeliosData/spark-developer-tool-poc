@@ -32,38 +32,38 @@ import org.apache.hadoop.io.SequenceFile.CompressionType
 import org.apache.hadoop.io.compress.GzipCodec
 import org.apache.log4j.{AppenderSkeleton, LogManager}
 import org.apache.log4j.spi.LoggingEvent
-import org.apache.spark.SparkException
 
+import org.apache.spark.SparkException
 import org.apache.spark.sql.{AnalysisException, DataFrame, QueryTest, Row}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.test.{SharedSQLContext, SQLTestUtils}
 import org.apache.spark.sql.types._
 
-class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils with TestCsvData {
+class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
+  with TestCsvData {
 
   import testImplicits._
 
-  private val carsFile = "test-data/cars.csv"
-  private val carsMalformedFile = "test-data/cars-malformed.csv"
-  private val carsFile8859 = "test-data/cars_iso-8859-1.csv"
-  private val carsTsvFile = "test-data/cars.tsv"
-  private val carsAltFile = "test-data/cars-alternative.csv"
-  private val carsUnbalancedQuotesFile = "test-data/cars-unbalanced-quotes.csv"
-  private val carsNullFile = "test-data/cars-null.csv"
-  private val carsEmptyValueFile = "test-data/cars-empty-value.csv"
-  private val carsBlankColName = "test-data/cars-blank-column-name.csv"
-  private val emptyFile = "test-data/empty.csv"
-  private val commentsFile = "test-data/comments.csv"
-  private val disableCommentsFile = "test-data/disable_comments.csv"
-  private val boolFile = "test-data/bool.csv"
-  private val decimalFile = "test-data/decimal.csv"
-  private val simpleSparseFile = "test-data/simple_sparse.csv"
-  private val numbersFile = "test-data/numbers.csv"
-  private val datesFile = "test-data/dates.csv"
-  private val unescapedQuotesFile = "test-data/unescaped-quotes.csv"
-  private val valueMalformedFile = "test-data/value-malformed.csv"
-  private val malformedRowFile = "test-data/malformedRow.csv"
+  private val carsFile = "test-data/sds/cars.csv"
+  private val carsMalformedFile = "test-data/sds/cars-malformed.csv"
+  private val carsFile8859 = "test-data/sds/cars_iso-8859-1.csv"
+  private val carsTsvFile = "test-data/sds/cars.tsv"
+  private val carsAltFile = "test-data/sds/cars-alternative.csv"
+  private val carsUnbalancedQuotesFile = "test-data/sds/cars-unbalanced-quotes.csv"
+  private val carsNullFile = "test-data/sds/cars-null.csv"
+  private val carsEmptyValueFile = "test-data/sds/cars-empty-value.csv"
+  private val carsBlankColName = "test-data/sds/cars-blank-column-name.csv"
+  private val emptyFile = "test-data/sds/empty.csv"
+  private val commentsFile = "test-data/sds/comments.csv"
+  private val disableCommentsFile = "test-data/sds/disable_comments.csv"
+  private val decimalFile = "test-data/sds/decimal.csv"
+  private val simpleSparseFile = "test-data/sds/simple_sparse.csv"
+  private val numbersFile = "test-data/sds/numbers.csv"
+  private val datesFile = "test-data/sds/dates.csv"
+  private val unescapedQuotesFile = "test-data/sds/unescaped-quotes.csv"
+  private val valueMalformedFile = "test-data/sds/value-malformed.csv"
+  private val malformedRowFile = "test-data/sds/malformedRow.csv"
 
   /** Verifies data and schema. */
   private def verifyCars(
@@ -170,18 +170,6 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils with
       .csv(csvDataset)
 
     verifyCars(carsWithoutHeader, withHeader = false, checkTypes = false)
-  }
-
-  test("test inferring booleans") {
-    val result = spark.read
-      .format("csv")
-      .option("header", "true")
-      .option("inferSchema", "true")
-      .load(testFile(boolFile))
-
-    val expectedSchema = StructType(List(
-      StructField("bool", BooleanType, nullable = true)))
-    assert(result.schema === expectedSchema)
   }
 
   test("test inferring decimals") {
