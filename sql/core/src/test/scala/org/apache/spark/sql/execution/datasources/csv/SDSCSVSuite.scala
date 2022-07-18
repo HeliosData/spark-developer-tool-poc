@@ -1940,4 +1940,21 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
       checkAnswer(readback, Row(timestamp))
     }
   }
+
+  test("Multiple partitions") {
+    withTempPath { path =>
+      Seq(1, 2, 3, 4, 5).toDF("value")
+        .repartition(1)
+        .write
+        .format("com.databricks.spark.csv")
+        .option("header", "true")
+        .option("delimiter", ",")
+        .save(path.getAbsolutePath)
+      val readback = spark.read
+        .option("header", "true")
+        .csv(path.getAbsolutePath)
+
+      readback.show()
+    }
+  }
 }

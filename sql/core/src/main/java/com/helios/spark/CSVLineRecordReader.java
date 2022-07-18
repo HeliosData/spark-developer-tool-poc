@@ -53,6 +53,10 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
 
   public CSVLineRecordReader() {}
 
+  public CSVLineRecordReader(boolean hasHeader) {
+    this.hasHeader = hasHeader;
+  }
+
   public CSVLineRecordReader(byte[] recordDelimiter, boolean hasHeader) {
     this.recordDelimiterBytes = recordDelimiter;
     this.hasHeader = hasHeader;

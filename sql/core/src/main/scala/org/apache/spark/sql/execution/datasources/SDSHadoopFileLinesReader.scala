@@ -61,7 +61,7 @@ class SDSHadoopFileLinesReader(
     val reader = lineSeparator match {
       case Some(sep) => new CSVLineRecordReader(sep, hasHeader)
       // If the line separator is `None`, it covers `\r`, `\r\n` and `\n`.
-      case _ => new CSVLineRecordReader()
+      case _ => new CSVLineRecordReader(hasHeader)
     }
 
     reader.initialize(fileSplit, hadoopAttemptContext)
