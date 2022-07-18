@@ -42,9 +42,11 @@ import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl
 class SDSHadoopFileLinesReader(
   file: PartitionedFile,
   lineSeparator: Option[Array[Byte]],
-  conf: Configuration) extends Iterator[Text] with Closeable {
+  conf: Configuration,
+  hasHeader: Boolean) extends Iterator[Text] with Closeable {
 
-  def this(file: PartitionedFile, conf: Configuration) = this(file, None, conf)
+  def this(file: PartitionedFile, conf: Configuration, hasHeader: Boolean) = this(file, None, conf,
+    hasHeader)
 
   private val iterator = {
     val fileSplit = new FileSplit(
@@ -57,7 +59,7 @@ class SDSHadoopFileLinesReader(
     val hadoopAttemptContext = new TaskAttemptContextImpl(conf, attemptId)
 
     val reader = lineSeparator match {
-      case Some(sep) => new CSVLineRecordReader(sep)
+      case Some(sep) => new CSVLineRecordReader(sep, hasHeader)
       // If the line separator is `None`, it covers `\r`, `\r\n` and `\n`.
       case _ => new CSVLineRecordReader()
     }

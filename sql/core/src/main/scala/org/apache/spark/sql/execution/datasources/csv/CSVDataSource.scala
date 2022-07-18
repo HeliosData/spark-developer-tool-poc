@@ -195,8 +195,9 @@ object TextInputCSVDataSource extends CSVDataSource {
       dataSchema: StructType,
       caseSensitive: Boolean,
       columnPruning: Boolean): Iterator[InternalRow] = {
+    val hasHeader = parser.options.headerFlag && file.start == 0
     val lines = {
-      val linesReader = new SDSHadoopFileLinesReader(file, conf)
+      val linesReader = new SDSHadoopFileLinesReader(file, conf, hasHeader)
       Option(TaskContext.get()).foreach(_.addTaskCompletionListener[Unit](_ => linesReader.close()))
       linesReader.map { line =>
         new String(line.getBytes, 0, line.getLength, parser.options.charset)

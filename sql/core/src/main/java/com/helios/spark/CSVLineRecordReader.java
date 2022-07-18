@@ -46,14 +46,16 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
   private Decompressor decompressor;
   private byte[] recordDelimiterBytes;
 
-  private List<String> columnNames;
   private CSVColumnIndicesInfo columnIndicesInfo;
   private byte fieldSep;
 
+  private boolean hasHeader;
+
   public CSVLineRecordReader() {}
 
-  public CSVLineRecordReader(byte[] recordDelimiter) {
+  public CSVLineRecordReader(byte[] recordDelimiter, boolean hasHeader) {
     this.recordDelimiterBytes = recordDelimiter;
+    this.hasHeader = hasHeader;
   }
 
   public void initialize(InputSplit genericSplit, TaskAttemptContext context) throws IOException {
@@ -104,12 +106,12 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
     }
 
     this.pos = this.start;
-    boolean isFirstSplit = this.start == 0;
-    waitConfigAndInitSds(context.getConfiguration(), isFirstSplit);
+    waitConfigAndInitSds(context.getConfiguration());
   }
 
-  private void waitConfigAndInitSds(Configuration configuration, boolean isFirstSplit) {
-    if (isFirstSplit) {
+  private void waitConfigAndInitSds(Configuration configuration) {
+    System.out.printf("====== waitConfigAndInitSds ====== %b", hasHeader);
+    if (hasHeader) {
       skipEmptyLineAndComments(configuration);
       List<byte[]> headerBytesList =
           this.splitByteArrayByDelimiter(
@@ -161,11 +163,11 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
     }
 
     System.out.printf("Setting csvHeaderStr: %s \n", csvHeaderStr);
-    this.columnNames = Arrays.asList(csvHeaderStr.split(","));
+    List<String> columnNames = Arrays.asList(csvHeaderStr.split(","));
     List<DatatableSchema> sdsDatatableSchemas =
         JavaConverters.seqAsJavaListConverter(Util.getSDSDatatableSchema(configuration)).asJava();
     this.columnIndicesInfo =
-        CSVColumnIndicesInfo.buildFromSDSDatatableSchemaList(this.columnNames, sdsDatatableSchemas);
+        CSVColumnIndicesInfo.buildFromSDSDatatableSchemaList(columnNames, sdsDatatableSchemas);
     System.out.printf(
         "Setting columnIndicesInfo: %s, %s \n",
         this.columnIndicesInfo.getIndicesToAnonymize().toString(),
