@@ -49,17 +49,10 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
   private CSVColumnIndicesInfo columnIndicesInfo;
   private byte fieldSep;
 
-  private boolean hasHeader;
-
   public CSVLineRecordReader() {}
 
-  public CSVLineRecordReader(boolean hasHeader) {
-    this.hasHeader = hasHeader;
-  }
-
-  public CSVLineRecordReader(byte[] recordDelimiter, boolean hasHeader) {
+  public CSVLineRecordReader(byte[] recordDelimiter) {
     this.recordDelimiterBytes = recordDelimiter;
-    this.hasHeader = hasHeader;
   }
 
   public void initialize(InputSplit genericSplit, TaskAttemptContext context) throws IOException {
@@ -110,22 +103,7 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
     }
 
     this.pos = this.start;
-    waitConfigAndInitSds(context.getConfiguration());
-  }
-
-  private void waitConfigAndInitSds(Configuration configuration) {
-    System.out.printf("====== waitConfigAndInitSds ====== %b", hasHeader);
-    if (hasHeader) {
-      skipEmptyLineAndComments(configuration);
-      List<byte[]> headerBytesList =
-          this.splitByteArrayByDelimiter(
-              this.value.getBytes(), (byte) Util.getCSVFieldSep(configuration));
-      byte[] headerBytes = this.merge2DArray(headerBytesList, (byte) ',');
-      Util.setCSVHeaderStr(configuration, new String(headerBytes));
-    } else {
-      // TODO: wait
-    }
-    initSds(configuration);
+    initSds(context.getConfiguration());
   }
 
   private void skipEmptyLineAndComments(Configuration configuration) {
@@ -161,8 +139,16 @@ public class CSVLineRecordReader extends RecordReader<LongWritable, Text> {
   }
 
   private void initSds(Configuration configuration) {
+    skipEmptyLineAndComments(configuration);
+    List<byte[]> headerBytesList =
+            this.splitByteArrayByDelimiter(
+                    this.value.getBytes(), (byte) Util.getCSVFieldSep(configuration));
+    byte[] headerBytes = this.merge2DArray(headerBytesList, (byte) ',');
+    Util.setCSVHeaderStr(configuration, new String(headerBytes));
+
     String csvHeaderStr = Util.getCSVHeaderStr(configuration);
     if (csvHeaderStr == null) {
+      // TODO: throw error
       return;
     }
 

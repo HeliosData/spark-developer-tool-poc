@@ -1917,10 +1917,15 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
   test("parse timestamp in microsecond precision") {
     withTempPath { path =>
       val t = "2019-11-14 20:35:30.123456"
-      Seq(t).toDF("t").write.text(path.getAbsolutePath)
+      Seq(t).toDF("t").write
+        .format("com.databricks.spark.csv")
+        .option("header", "true")
+        .option("delimiter", ",")
+        .save(path.getAbsolutePath)
       val readback = spark.read
         .schema("t timestamp")
         .option("timestampFormat", "yyyy-MM-dd HH:mm:ss.SSSSSS")
+        .option("header", "true")
         .csv(path.getAbsolutePath)
       checkAnswer(readback, Row(Timestamp.valueOf(t)))
     }
@@ -1931,11 +1936,15 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
       val timestamp = Timestamp.valueOf("2019-11-18 11:56:00.123456")
       Seq(timestamp.toString).toDF("t")
         .write
+        .format("com.databricks.spark.csv")
         .option("timestampFormat", "yyyy-MM-dd HH:mm:ss.SSSSSS")
-        .csv(path.getAbsolutePath)
+        .option("header", "true")
+        .option("delimiter", ",")
+        .save(path.getAbsolutePath)
       val readback = spark.read
         .schema("t timestamp")
         .option("timestampFormat", "yyyy-MM-dd HH:mm:ss.SSSSSS")
+        .option("header", "true")
         .csv(path.getAbsolutePath)
       checkAnswer(readback, Row(timestamp))
     }
