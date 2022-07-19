@@ -74,7 +74,6 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     checkHeader: Boolean = true,
     checkValues: Boolean = true,
     checkTypes: Boolean = false): Unit = {
-    return
 
     val numColumns = numFields
     val numRows = if (withHeader) numCars else numCars + 1
@@ -130,19 +129,19 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     val cars = spark
       .read
       .format("csv")
-      .option("header", "false")
+      .option("header", "true")
       .load(testFile(carsFile))
 
-    verifyCars(cars, withHeader = false, checkTypes = false)
+    verifyCars(cars, withHeader = true, checkTypes = false)
   }
 
   test("simple csv test with calling another function to load") {
     val cars = spark
       .read
-      .option("header", "false")
+      .option("header", "true")
       .csv(testFile(carsFile))
 
-    verifyCars(cars, withHeader = false, checkTypes = false)
+    verifyCars(cars, withHeader = true, checkTypes = false)
   }
 
   test("simple csv test with type inference") {
@@ -317,11 +316,11 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     val cars = spark
       .read
       .format("csv")
-      .option("header", "false")
+      .option("header", "true")
       .option("comment", "~")
       .load(testFile(carsMalformedFile))
 
-    verifyCars(cars, withHeader = false, checkTypes = false)
+    verifyCars(cars, withHeader = true, checkTypes = false)
   }
 
   test("test with null quote character") {
@@ -824,10 +823,10 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     val cars = spark
       .read
       .format("com.databricks.spark.csv")
-      .option("header", "false")
+      .option("header", "true")
       .load(testFile(carsFile))
 
-    verifyCars(cars, withHeader = false, checkTypes = false)
+    verifyCars(cars, withHeader = true, checkTypes = false)
   }
 
   test("nulls, NaNs and Infinity values can be parsed") {
