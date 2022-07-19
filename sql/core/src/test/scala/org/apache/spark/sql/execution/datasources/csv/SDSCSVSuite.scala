@@ -1415,7 +1415,6 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
   test("SPARK-17916: An empty string should not be coerced to null when nullValue is passed.") {
     val litNull: String = null
     val df = Seq(
-      ("c1", "c2"),
       (1, "John Doe"),
       (2, ""),
       (3, "-"),
@@ -1427,6 +1426,8 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     withTempPath { path =>
       df.write
         .option("nullValue", "-")
+        .option("header", "true")
+        .option("delimiter", ",")
         .csv(path.getAbsolutePath)
       val computed = spark.read
         .option("nullValue", "-")
@@ -1444,6 +1445,8 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     // Keeps the old behavior where empty string us coerced to nullValue is not passed.
     withTempPath { path =>
       df.write
+        .option("header", "true")
+        .option("delimiter", ",")
         .csv(path.getAbsolutePath)
       val computed = spark.read
         .schema(df.schema)
@@ -1462,7 +1465,6 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
   test("SPARK-25241: An empty string should not be coerced to null when emptyValue is passed.") {
     val litNull: String = null
     val df = Seq(
-      ("c1", "c2"),
       (1, "John Doe"),
       (2, ""),
       (3, "-"),
@@ -1474,6 +1476,8 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     withTempPath { path =>
       df.write
         .option("emptyValue", "-")
+        .option("header", "true")
+        .option("delimiter", ",")
         .csv(path.getAbsolutePath)
       val computed = spark.read
         .option("emptyValue", "-")
@@ -1491,6 +1495,8 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     // Keeps the old behavior where empty string us coerced to emptyValue is not passed.
     withTempPath { path =>
       df.write
+        .option("header", "true")
+        .option("delimiter", ",")
         .csv(path.getAbsolutePath)
       val computed = spark.read
         .schema(df.schema)
