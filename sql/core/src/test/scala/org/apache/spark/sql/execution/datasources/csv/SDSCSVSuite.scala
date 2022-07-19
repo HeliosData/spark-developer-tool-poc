@@ -1554,81 +1554,6 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     }
   }
 
-  def checkHeader(multiLine: Boolean): Unit = {
-    withSQLConf(SQLConf.CASE_SENSITIVE.key -> "true") {
-      withTempPath { path =>
-        val oschema = new StructType().add("f1", DoubleType).add("f2", DoubleType)
-        val odf = spark.createDataFrame(List(Row(1.0, 1234.5)).asJava, oschema)
-        odf.write
-          .option("header", "true")
-          .option("delimiter", ",")
-          .csv(path.getCanonicalPath)
-        val ischema = new StructType().add("f2", DoubleType).add("f1", DoubleType)
-        val exception = intercept[SparkException] {
-          spark.read
-            .schema(ischema)
-            .option("multiLine", multiLine)
-            .option("header", true)
-            .option("enforceSchema", false)
-            .csv(path.getCanonicalPath)
-            .collect()
-        }
-        assert(exception.getMessage.contains("CSV header does not conform to the schema"))
-
-        val shortSchema = new StructType().add("f1", DoubleType)
-        val exceptionForShortSchema = intercept[SparkException] {
-          spark.read
-            .schema(shortSchema)
-            .option("multiLine", multiLine)
-            .option("header", true)
-            .option("enforceSchema", false)
-            .csv(path.getCanonicalPath)
-            .collect()
-        }
-        assert(exceptionForShortSchema.getMessage.contains(
-          "Number of column in CSV header is not equal to number of fields in the schema"))
-
-        val longSchema = new StructType()
-          .add("f1", DoubleType)
-          .add("f2", DoubleType)
-          .add("f3", DoubleType)
-
-        val exceptionForLongSchema = intercept[SparkException] {
-          spark.read
-            .schema(longSchema)
-            .option("multiLine", multiLine)
-            .option("header", true)
-            .option("enforceSchema", false)
-            .csv(path.getCanonicalPath)
-            .collect()
-        }
-        assert(exceptionForLongSchema.getMessage.contains("Header length: 2, schema size: 3"))
-
-        val caseSensitiveSchema = new StructType().add("F1", DoubleType).add("f2", DoubleType)
-        val caseSensitiveException = intercept[SparkException] {
-          spark.read
-            .schema(caseSensitiveSchema)
-            .option("multiLine", multiLine)
-            .option("header", true)
-            .option("enforceSchema", false)
-            .csv(path.getCanonicalPath)
-            .collect()
-        }
-        assert(caseSensitiveException.getMessage.contains(
-          "CSV header does not conform to the schema"))
-      }
-    }
-  }
-
-  // TODO: Test after implementing multiLine
-  //  test(s"SPARK-23786: Checking column names against schema in the multiline mode") {
-  //    checkHeader(multiLine = true)
-  //  }
-
-  test(s"SPARK-23786: Checking column names against schema in the per-line mode") {
-    checkHeader(multiLine = false)
-  }
-
   test("SPARK-23786: Ignore column name case if spark.sql.caseSensitive is false") {
     withSQLConf(SQLConf.CASE_SENSITIVE.key -> "false") {
       withTempPath { path =>
@@ -1798,7 +1723,7 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
       // the case where tokens length != parsedSchema length
       withTempPath { path =>
         val dir = path.getAbsolutePath
-        Seq("1,2").toDF().write.text(dir)
+        Seq("1,2").toDF("c1", "c2").write.text(dir)
         // more tokens
         val df1 = spark.read.schema("c0 int").format("csv").option("mode", "permissive").load(dir)
         checkAnswer(df1, Row(1))
