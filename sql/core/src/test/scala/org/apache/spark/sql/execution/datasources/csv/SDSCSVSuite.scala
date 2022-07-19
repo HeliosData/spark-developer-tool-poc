@@ -1538,12 +1538,13 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
         .add("f13", IntegerType).add("f14", IntegerType).add("f15", IntegerType)
 
       val odf = spark.createDataFrame(List(
-        Row("c1", "c2", "c3", "c4", "c5", "c6", "c7",
-          "c8", "c9", "c10", "c11", "c12", "c13", "c14", "c15"),
         Row(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
         Row(-1, -2, -3, -4, -5, -6, -7, -8, -9, -10, -11, -12, -13, -14, -15)
       ).asJava, schema)
-      odf.write.csv(path.getCanonicalPath)
+      odf.write
+        .option("header", "true")
+        .option("delimiter", ",")
+        .csv(path.getCanonicalPath)
       val idf = spark.read
         .schema(schema)
         .csv(path.getCanonicalPath)
@@ -1558,8 +1559,11 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     withSQLConf(SQLConf.CASE_SENSITIVE.key -> "true") {
       withTempPath { path =>
         val oschema = new StructType().add("f1", DoubleType).add("f2", DoubleType)
-        val odf = spark.createDataFrame(List(Row("f1", "f2"), Row(1.0, 1234.5)).asJava, oschema)
-        odf.write.option("header", true).csv(path.getCanonicalPath)
+        val odf = spark.createDataFrame(List(Row(1.0, 1234.5)).asJava, oschema)
+        odf.write
+          .option("header", "true")
+          .option("delimiter", ",")
+          .csv(path.getCanonicalPath)
         val ischema = new StructType().add("f2", DoubleType).add("f1", DoubleType)
         val exception = intercept[SparkException] {
           spark.read
