@@ -1611,9 +1611,10 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     }
   }
 
-  test(s"SPARK-23786: Checking column names against schema in the multiline mode") {
-    checkHeader(multiLine = true)
-  }
+  // TODO: Test after implementing multiLine
+  //  test(s"SPARK-23786: Checking column names against schema in the multiline mode") {
+  //    checkHeader(multiLine = true)
+  //  }
 
   test(s"SPARK-23786: Checking column names against schema in the per-line mode") {
     checkHeader(multiLine = false)
