@@ -586,7 +586,7 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
   test("inferring schema with commented lines in CSV data") {
     val results = spark.read
       .format("csv")
-      .options(Map("comment" -> "~", "header" -> "false", "inferSchema" -> "true"))
+      .options(Map("comment" -> "~", "header" -> "true", "inferSchema" -> "true"))
       .load(testFile(commentsFile))
       .collect()
 
