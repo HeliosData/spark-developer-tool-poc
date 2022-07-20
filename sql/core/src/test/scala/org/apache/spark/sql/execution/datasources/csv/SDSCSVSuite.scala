@@ -1103,23 +1103,24 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     }
   }
 
-  test("load null when the schema is larger than parsed tokens ") {
-    withTempPath { path =>
-      Seq("1").toDF("c1").write
-        .format("com.databricks.spark.csv")
-        .option("header", "true")
-        .option("delimiter", ",")
-        .save(path.getAbsolutePath)
-      val schema = StructType(
-        StructField("a", IntegerType, true) ::
-          StructField("b", IntegerType, true) :: Nil)
-      val df = spark.read
-        .option("header", "false")
-        .csv(path.getAbsolutePath)
-
-      checkAnswer(df, Row(1, null))
-    }
-  }
+  // Note: Skip test since we don't allow user provides schema
+  //  test("load null when the schema is larger than parsed tokens ") {
+  //    withTempPath { path =>
+  //      Seq("1").toDF("c1").write
+  //        .format("com.databricks.spark.csv")
+  //        .option("header", "true")
+  //        .option("delimiter", ",")
+  //        .save(path.getAbsolutePath)
+  //      val schema = StructType(
+  //        StructField("a", IntegerType, true) ::
+  //          StructField("b", IntegerType, true) :: Nil)
+  //      val df = spark.read
+  //        .option("header", "false")
+  //        .csv(path.getAbsolutePath)
+  //
+  //      checkAnswer(df, Row(1, null))
+  //    }
+  //  }
 
   test("SPARK-18699 put malformed records in a `columnNameOfCorruptRecord` field") {
     // TODO: add true to Seq to test multiLine
@@ -1228,17 +1229,18 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     }
   }
 
-  test("Empty file produces empty dataframe with empty schema") {
-    Seq(false, true).foreach { multiLine =>
-      val df = spark.read.format("csv")
-        .option("header", true)
-        .option("multiLine", multiLine)
-        .load(testFile(emptyFile))
-
-      assert(df.schema === spark.emptyDataFrame.schema)
-      checkAnswer(df, spark.emptyDataFrame)
-    }
-  }
+  // Note: Currently, the csv file read in must contains header
+  //  test("Empty file produces empty dataframe with empty schema") {
+  //    Seq(false, true).foreach { multiLine =>
+  //      val df = spark.read.format("csv")
+  //        .option("header", true)
+  //        .option("multiLine", multiLine)
+  //        .load(testFile(emptyFile))
+  //
+  //      assert(df.schema === spark.emptyDataFrame.schema)
+  //      checkAnswer(df, spark.emptyDataFrame)
+  //    }
+  //  }
 
   test("Empty string dataset produces empty dataframe and keep user-defined schema") {
     val df1 = spark.read.csv(spark.emptyDataset[String])
@@ -1566,7 +1568,7 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     }
   }
 
-  // Note: Skip comment since we don't allow user provides schema
+  // Note: Skip test since we don't allow user provides schema
   //  def checkHeader(multiLine: Boolean): Unit = {
   //    withSQLConf(SQLConf.CASE_SENSITIVE.key -> "true") {
   //      withTempPath { path =>
