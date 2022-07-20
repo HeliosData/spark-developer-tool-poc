@@ -30,8 +30,6 @@ import scala.util.Properties
 import org.apache.commons.lang3.time.FastDateFormat
 import org.apache.hadoop.io.SequenceFile.CompressionType
 import org.apache.hadoop.io.compress.GzipCodec
-import org.apache.log4j.{AppenderSkeleton, LogManager}
-import org.apache.log4j.spi.LoggingEvent
 
 import org.apache.spark.SparkException
 import org.apache.spark.sql.{AnalysisException, DataFrame, QueryTest, Row}
@@ -57,6 +55,7 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
   private val emptyFile = "test-data/sds/empty.csv"
   private val commentsFile = "test-data/sds/comments.csv"
   private val disableCommentsFile = "test-data/sds/disable_comments.csv"
+  private val boolFile = "test-data/sds/bool.csv"
   private val decimalFile = "test-data/sds/decimal.csv"
   private val simpleSparseFile = "test-data/sds/simple_sparse.csv"
   private val numbersFile = "test-data/sds/numbers.csv"
@@ -171,6 +170,18 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     verifyCars(carsWithoutHeader, withHeader = false, checkTypes = false)
   }
 
+  test("test inferring booleans") {
+    val result = spark.read
+      .format("csv")
+      .option("header", "true")
+      .option("inferSchema", "true")
+      .load(testFile(boolFile))
+
+    val expectedSchema = StructType(List(
+      StructField("bool", BooleanType, nullable = true)))
+    assert(result.schema === expectedSchema)
+  }
+
   test("test inferring decimals") {
     val result = spark.read
       .format("csv")
@@ -273,19 +284,19 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     }
   }
 
-  //  test("test for DROPMALFORMED parsing mode") {
-  //    withSQLConf(SQLConf.CSV_PARSER_COLUMN_PRUNING.key -> "false") {
-  //      Seq(false, true).foreach { multiLine =>
-  //        val cars = spark.read
-  //          .format("csv")
-  //          .option("multiLine", multiLine)
-  //          .options(Map("header" -> "true", "mode" -> "dropmalformed"))
-  //          .load(testFile(carsFile))
-  //
-  //        assert(cars.select("year").collect().size === 2)
-  //      }
-  //    }
-  //  }
+  test("test for DROPMALFORMED parsing mode") {
+    withSQLConf(SQLConf.CSV_PARSER_COLUMN_PRUNING.key -> "false") {
+      Seq(false, true).foreach { multiLine =>
+        val cars = spark.read
+          .format("csv")
+          .option("multiLine", multiLine)
+          .options(Map("header" -> "true", "mode" -> "dropmalformed"))
+          .load(testFile(carsFile))
+
+        assert(cars.select("year").collect().size === 2)
+      }
+    }
+  }
 
   test("test for blank column names on read and select columns") {
     val cars = spark.read
@@ -497,7 +508,7 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     }
   }
 
-  test("save csv with quote escaping, using charToEscapeQuoteEscaping option") { // failed
+  test("save csv with quote escaping, using charToEscapeQuoteEscaping option") {
     withTempPath { path =>
 
       // original text
@@ -525,6 +536,7 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
         .option("header", true)
         .option("charToEscapeQuoteEscaping", "#")
         .load(path.getAbsolutePath)
+
       checkAnswer(df1, df3)
     }
   }
@@ -1105,7 +1117,7 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
         .option("header", "false")
         .csv(path.getAbsolutePath)
 
-      df.show()
+      checkAnswer(df, Row(1, null))
     }
   }
 
@@ -1216,17 +1228,17 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
     }
   }
 
-  //  test("Empty file produces empty dataframe with empty schema") {
-  //    Seq(false, true).foreach { multiLine =>
-  //      val df = spark.read.format("csv")
-  //        .option("header", true)
-  //        .option("multiLine", multiLine)
-  //        .load(testFile(emptyFile))
-  //
-  //      assert(df.schema === spark.emptyDataFrame.schema)
-  //      checkAnswer(df, spark.emptyDataFrame)
-  //    }
-  //  }
+  test("Empty file produces empty dataframe with empty schema") {
+    Seq(false, true).foreach { multiLine =>
+      val df = spark.read.format("csv")
+        .option("header", true)
+        .option("multiLine", multiLine)
+        .load(testFile(emptyFile))
+
+      assert(df.schema === spark.emptyDataFrame.schema)
+      checkAnswer(df, spark.emptyDataFrame)
+    }
+  }
 
   test("Empty string dataset produces empty dataframe and keep user-defined schema") {
     val df1 = spark.read.csv(spark.emptyDataset[String])
@@ -1553,6 +1565,93 @@ class SDSCSVSuite extends QueryTest with SharedSQLContext with SQLTestUtils
       checkAnswer(idf, List(Row(15, 10, 5), Row(-15, -10, -5)))
     }
   }
+
+  // Note: Skip comment since we don't allow user provides schema
+  //  def checkHeader(multiLine: Boolean): Unit = {
+  //    withSQLConf(SQLConf.CASE_SENSITIVE.key -> "true") {
+  //      withTempPath { path =>
+  //        val oschema = new StructType().add("f1", DoubleType).add("f2", DoubleType)
+  //        val odf = spark.createDataFrame(List(Row(1.0, 1234.5)).asJava, oschema)
+  //        odf.write.option("header", true).csv(path.getCanonicalPath)
+  //        val ischema = new StructType().add("f2", DoubleType).add("f1", DoubleType)
+  //        val exception = intercept[SparkException] {
+  //          spark.read
+  //            .schema(ischema)
+  //            .option("multiLine", multiLine)
+  //            .option("header", true)
+  //            .option("enforceSchema", false)
+  //            .csv(path.getCanonicalPath)
+  //            .collect()
+  //        }
+  //        assert(exception.getMessage.contains("CSV header does not conform to the schema"))
+  //
+  //        val shortSchema = new StructType().add("f1", DoubleType)
+  //        val exceptionForShortSchema = intercept[SparkException] {
+  //          spark.read
+  //            .schema(shortSchema)
+  //            .option("multiLine", multiLine)
+  //            .option("header", true)
+  //            .option("enforceSchema", false)
+  //            .csv(path.getCanonicalPath)
+  //            .collect()
+  //        }
+  //        assert(exceptionForShortSchema.getMessage.contains(
+  //          "Number of column in CSV header is not equal to number of fields in the schema"))
+  //
+  //        val longSchema = new StructType()
+  //          .add("f1", DoubleType)
+  //          .add("f2", DoubleType)
+  //          .add("f3", DoubleType)
+  //
+  //        val exceptionForLongSchema = intercept[SparkException] {
+  //          spark.read
+  //            .schema(longSchema)
+  //            .option("multiLine", multiLine)
+  //            .option("header", true)
+  //            .option("enforceSchema", false)
+  //            .csv(path.getCanonicalPath)
+  //            .collect()
+  //        }
+  //        assert(exceptionForLongSchema.getMessage.contains("Header length: 2, schema size: 3"))
+  //
+  //        val caseSensitiveSchema = new StructType().add("F1", DoubleType).add("f2", DoubleType)
+  //        val caseSensitiveException = intercept[SparkException] {
+  //          spark.read
+  //            .schema(caseSensitiveSchema)
+  //            .option("multiLine", multiLine)
+  //            .option("header", true)
+  //            .option("enforceSchema", false)
+  //            .csv(path.getCanonicalPath)
+  //            .collect()
+  //        }
+  //        assert(caseSensitiveException.getMessage.contains(
+  //          "CSV header does not conform to the schema"))
+  //      }
+  //    }
+  //  }
+  //  test(s"SPARK-23786: Checking column names against schema in the multiline mode") {
+  //    checkHeader(multiLine = true)
+  //  }
+  //
+  //  test(s"SPARK-23786: Checking column names against schema in the per-line mode") {
+  //    checkHeader(multiLine = false)
+  //  }
+  //
+  //  test("SPARK-23786: CSV header must not be checked if it doesn't exist") {
+  //    withTempPath { path =>
+  //      val oschema = new StructType().add("f1", DoubleType).add("f2", DoubleType)
+  //      val odf = spark.createDataFrame(List(Row(1.0, 1234.5)).asJava, oschema)
+  //      odf.write.option("header", false).csv(path.getCanonicalPath)
+  //      val ischema = new StructType().add("f2", DoubleType).add("f1", DoubleType)
+  //      val idf = spark.read
+  //        .schema(ischema)
+  //        .option("header", false)
+  //        .option("enforceSchema", false)
+  //        .csv(path.getCanonicalPath)
+  //
+  //      checkAnswer(idf, odf)
+  //    }
+  //  }
 
   test("SPARK-23786: Ignore column name case if spark.sql.caseSensitive is false") {
     withSQLConf(SQLConf.CASE_SENSITIVE.key -> "false") {
