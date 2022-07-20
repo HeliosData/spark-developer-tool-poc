@@ -120,7 +120,7 @@ object CSVDataSource extends Logging {
     if (options.multiLine) {
       MultiLineCSVDataSource
     } else {
-      TextInputCSVDataSource
+      SDSTextInputDataSourc
     }
   }
 
